@@ -2,200 +2,97 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>和太鼓リズムゲーム 改良版</title>
-
+<title>1/2を10連続当てろ</title>
 <style>
-body{
-    margin:0;
-    background:#000;
-    color:white;
-    font-family:sans-serif;
-    text-align:center;
-    overflow:hidden;
+body {
+    background: #111;
+    color: #fff;
+    font-family: sans-serif;
+    text-align: center;
+    padding-top: 80px;
 }
-
-h1{ margin:10px; }
-
-#scoreBoard{
-    font-size:18px;
-    margin:5px;
+h1 {
+    font-size: 28px;
 }
-
-#judge{
-    font-size:42px;
-    height:50px;
-    font-weight:bold;
+button {
+    font-size: 20px;
+    padding: 15px 40px;
+    margin: 20px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
 }
-
-#game{
-    position:relative;
-    width:100%;
-    height:75vh;
-    background:linear-gradient(#111,#000);
-    overflow:hidden;
+#left { background: #3498db; color: white; }
+#right { background: #e74c3c; color: white; }
+button:hover {
+    transform: scale(1.1);
 }
-
-.lane{
-    position:absolute;
-    width:50%;
-    height:100%;
+#result {
+    margin-top: 30px;
+    font-size: 20px;
+    min-height: 60px;
 }
-
-#donLane{ left:0; border-right:2px solid #333; }
-#kaLane{ right:0; }
-
-.hitCircle{
-    position:absolute;
-    bottom:150px;
-    width:130px;
-    height:130px;
-    border-radius:50%;
-    border:6px solid gold;
-    left:50%;
-    transform:translateX(-50%);
+#streak {
+    font-size: 24px;
+    margin-top: 20px;
 }
-
-.note{
-    position:absolute;
-    width:80px;
-    height:80px;
-    border-radius:50%;
-    left:50%;
-    transform:translateX(-50%);
-}
-
-.don{ background:#ff2e2e; }
-.ka{ background:#2ecbff; }
-
 </style>
 </head>
 <body>
 
-<h1>和太鼓リズムゲーム</h1>
-<div>F＝ドン / J＝カッ</div>
-<div id="scoreBoard">Score: 0 | Combo: 0</div>
-<div id="judge"></div>
+<h1>二分の一を10連続で当てろ</h1>
+<p>左か右を選べ。外したら地獄。</p>
 
-<div id="game">
-    <div id="donLane" class="lane">
-        <div class="hitCircle"></div>
-    </div>
-    <div id="kaLane" class="lane">
-        <div class="hitCircle"></div>
-    </div>
-</div>
+<div id="streak">現在の連続成功: 0 / 10</div>
+
+<button id="left" onclick="play(0)">左</button>
+<button id="right" onclick="play(1)">右</button>
+
+<div id="result"></div>
 
 <script>
-let score = 0;
-let combo = 0;
-let notes = [];
+let streak = 0;
 
-const speed = 12;
-const judgeText = document.getElementById("judge");
-const scoreBoard = document.getElementById("scoreBoard");
+const insults = [
+    "はい終了。10分の1にも届かない集中力。伝説の雑魚。",
+    "この程度も当てられないのに挑戦者気取り？笑わせないで。",
+    "今の外し方、逆に才能ある。負けの。",
+    "脳みそログアウトしてた？それとも運が逃げた？",
+    "その自信どこから来たの。根拠ゼロで草。",
+    "期待値以前に期待できない。",
+    "1/2だよ？それすら越えられないって奇跡だね。悪い意味で。",
+    "今ので10連とか言ってたの？夢見すぎ。",
+    "その手でよくマウス持てたね。",
+    "また最初から。人生リセット感覚でどうぞ。"
+];
 
-function spawn(type){
-    const note = document.createElement("div");
-    note.className = "note " + type;
-    note.style.top = "-80px";
-    note.dataset.type = type;
+function play(choice) {
+    const random = Math.floor(Math.random() * 2);
 
-    const lane = type==="don"
-        ? document.getElementById("donLane")
-        : document.getElementById("kaLane");
+    if (choice === random) {
+        streak++;
+        document.getElementById("streak").textContent =
+            "現在の連続成功: " + streak + " / 10";
 
-    lane.appendChild(note);
-    notes.push(note);
-}
+        document.getElementById("result").textContent =
+            "成功。まあ1/2だしね。";
 
-function update(){
-    for(let i=notes.length-1;i>=0;i--){
-        let note = notes[i];
-        let top = parseFloat(note.style.top);
-        top += speed;
-        note.style.top = top + "px";
-
-        if(top > window.innerHeight){
-            miss(note,i);
+        if (streak === 10) {
+            document.getElementById("result").textContent =
+                "10連成功。正直ちょっとだけ認める。確率1/1024を突破。やるじゃん。";
+            streak = 0;
+            document.getElementById("streak").textContent =
+                "現在の連続成功: 0 / 10";
         }
+    } else {
+        const insult = insults[Math.floor(Math.random() * insults.length)];
+        document.getElementById("result").textContent = insult;
+        streak = 0;
+        document.getElementById("streak").textContent =
+            "現在の連続成功: 0 / 10";
     }
-    requestAnimationFrame(update);
 }
-
-function miss(note,index){
-    combo = 0;
-    showJudge("BAD","red");
-    note.remove();
-    notes.splice(index,1);
-    updateScore();
-}
-
-function hit(type){
-    const lane = type==="don"
-        ? document.querySelector("#donLane .hitCircle")
-        : document.querySelector("#kaLane .hitCircle");
-
-    const hitY = lane.getBoundingClientRect().top;
-
-    let closest = null;
-    let closestIndex = -1;
-    let minDiff = Infinity;
-
-    for(let i=0;i<notes.length;i++){
-        if(notes[i].dataset.type===type){
-            let noteY = notes[i].getBoundingClientRect().top;
-            let diff = Math.abs(noteY-hitY);
-            if(diff < minDiff){
-                minDiff = diff;
-                closest = notes[i];
-                closestIndex = i;
-            }
-        }
-    }
-
-    if(!closest) return;
-
-    if(minDiff < 20){
-        score += 300;
-        combo++;
-        showJudge("GREAT","gold");
-    }
-    else if(minDiff < 45){
-        score += 100;
-        combo++;
-        showJudge("OK","lime");
-    }
-    else{
-        combo = 0;
-        showJudge("BAD","red");
-    }
-
-    closest.remove();
-    notes.splice(closestIndex,1);
-    updateScore();
-}
-
-function showJudge(text,color){
-    judgeText.textContent = text;
-    judgeText.style.color = color;
-}
-
-function updateScore(){
-    scoreBoard.textContent =
-        "Score: "+score+" | Combo: "+combo;
-}
-
-document.addEventListener("keydown",e=>{
-    if(e.key==="f"||e.key==="F") hit("don");
-    if(e.key==="j"||e.key==="J") hit("ka");
-});
-
-setInterval(()=>{
-    spawn(Math.random()>0.5?"don":"ka");
-},250);
-
-update();
 </script>
 
 </body>
