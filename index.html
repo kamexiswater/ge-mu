@@ -2,97 +2,145 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>1/2を10連続当てろ</title>
+<title>1/2 10連チャレンジ - 扉ver</title>
 <style>
 body {
+    margin: 0;
     background: #111;
-    color: #fff;
+    color: white;
     font-family: sans-serif;
+    overflow: hidden;
+}
+#game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+.door {
+    position: absolute;
+    bottom: 150px;
+    width: 150px;
+    height: 250px;
+    background: #444;
+    border: 4px solid white;
     text-align: center;
-    padding-top: 80px;
-}
-h1 {
-    font-size: 28px;
-}
-button {
-    font-size: 20px;
-    padding: 15px 40px;
-    margin: 20px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-#left { background: #3498db; color: white; }
-#right { background: #e74c3c; color: white; }
-button:hover {
-    transform: scale(1.1);
-}
-#result {
-    margin-top: 30px;
-    font-size: 20px;
-    min-height: 60px;
-}
-#streak {
+    line-height: 250px;
     font-size: 24px;
-    margin-top: 20px;
+}
+#leftDoor { left: 20%; }
+#rightDoor { right: 20%; }
+
+#player {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    width: 40px;
+    height: 60px;
+    background: #00ffcc;
+    transform: translateX(-50%);
+}
+
+#info {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+}
+
+#message {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+    min-height: 40px;
 }
 </style>
 </head>
 <body>
 
-<h1>二分の一を10連続で当てろ</h1>
-<p>左か右を選べ。外したら地獄。</p>
+<div id="game">
+    <div id="info">連続成功: 0 / 10　← → で移動して扉に触れろ</div>
 
-<div id="streak">現在の連続成功: 0 / 10</div>
+    <div id="leftDoor" class="door">左の扉</div>
+    <div id="rightDoor" class="door">右の扉</div>
 
-<button id="left" onclick="play(0)">左</button>
-<button id="right" onclick="play(1)">右</button>
+    <div id="player"></div>
 
-<div id="result"></div>
+    <div id="message"></div>
+</div>
 
 <script>
+let player = document.getElementById("player");
+let leftDoor = document.getElementById("leftDoor");
+let rightDoor = document.getElementById("rightDoor");
+let message = document.getElementById("message");
+let info = document.getElementById("info");
+
+let pos = window.innerWidth / 2;
 let streak = 0;
 
 const insults = [
-    "はい終了。10分の1にも届かない集中力。伝説の雑魚。",
-    "この程度も当てられないのに挑戦者気取り？笑わせないで。",
-    "今の外し方、逆に才能ある。負けの。",
-    "脳みそログアウトしてた？それとも運が逃げた？",
-    "その自信どこから来たの。根拠ゼロで草。",
-    "期待値以前に期待できない。",
-    "1/2だよ？それすら越えられないって奇跡だね。悪い意味で。",
-    "今ので10連とか言ってたの？夢見すぎ。",
-    "その手でよくマウス持てたね。",
-    "また最初から。人生リセット感覚でどうぞ。"
+    "終了。1/2も当てられないとか逆に才能。",
+    "その動きで勝てると思った？希望的観測。",
+    "10連？まず1連を安定させようか。",
+    "今の外し方、芸術的にダサい。",
+    "確率に嫌われるってここまで露骨なんだね。",
+    "1/1024の壁以前の問題だった。",
+    "ドアの前で自信満々だったのにね。",
+    "もう一回？学習機能ついてる？",
+    "期待値が泣いてる。",
+    "また最初から。人生もこんな感じ？"
 ];
+
+function checkCollision(door, side) {
+    const doorRect = door.getBoundingClientRect();
+    const playerRect = player.getBoundingClientRect();
+
+    if (
+        playerRect.right > doorRect.left &&
+        playerRect.left < doorRect.right
+    ) {
+        play(side);
+    }
+}
 
 function play(choice) {
     const random = Math.floor(Math.random() * 2);
 
     if (choice === random) {
         streak++;
-        document.getElementById("streak").textContent =
-            "現在の連続成功: " + streak + " / 10";
-
-        document.getElementById("result").textContent =
-            "成功。まあ1/2だしね。";
-
+        message.textContent = "成功。まだ運が生きてる。";
         if (streak === 10) {
-            document.getElementById("result").textContent =
-                "10連成功。正直ちょっとだけ認める。確率1/1024を突破。やるじゃん。";
+            message.textContent = "10連成功。確率1/1024突破。ちょっとだけ尊敬する。";
             streak = 0;
-            document.getElementById("streak").textContent =
-                "現在の連続成功: 0 / 10";
         }
     } else {
         const insult = insults[Math.floor(Math.random() * insults.length)];
-        document.getElementById("result").textContent = insult;
+        message.textContent = insult;
         streak = 0;
-        document.getElementById("streak").textContent =
-            "現在の連続成功: 0 / 10";
     }
+
+    info.textContent = "連続成功: " + streak + " / 10　← → で移動して扉に触れろ";
+
+    pos = window.innerWidth / 2;
+    player.style.left = pos + "px";
 }
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "ArrowLeft") {
+        pos -= 30;
+    }
+    if (e.key === "ArrowRight") {
+        pos += 30;
+    }
+
+    player.style.left = pos + "px";
+
+    checkCollision(leftDoor, 0);
+    checkCollision(rightDoor, 1);
+});
 </script>
 
 </body>
