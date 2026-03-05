@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>和太鼓リズムゲーム HARD</title>
+<title>和太鼓リズムゲーム 改良版</title>
 
 <style>
 body{
     margin:0;
-    background:#0d0d0d;
+    background:#000;
     color:white;
     font-family:sans-serif;
     text-align:center;
@@ -17,17 +17,14 @@ body{
 
 h1{ margin:10px; }
 
-#info{ font-size:14px; opacity:0.8; }
-
 #scoreBoard{
-    margin:5px;
     font-size:18px;
+    margin:5px;
 }
 
-#judgement{
-    font-size:40px;
+#judge{
+    font-size:42px;
     height:50px;
-    margin:10px;
     font-weight:bold;
 }
 
@@ -50,36 +47,35 @@ h1{ margin:10px; }
 
 .hitCircle{
     position:absolute;
-    bottom:120px;
-    width:120px;
-    height:120px;
+    bottom:150px;
+    width:130px;
+    height:130px;
     border-radius:50%;
-    border:5px solid gold;
+    border:6px solid gold;
     left:50%;
     transform:translateX(-50%);
 }
 
 .note{
     position:absolute;
-    width:70px;
-    height:70px;
+    width:80px;
+    height:80px;
     border-radius:50%;
     left:50%;
     transform:translateX(-50%);
 }
 
-.don{ background:red; }
-.ka{ background:deepskyblue; }
+.don{ background:#ff2e2e; }
+.ka{ background:#2ecbff; }
 
 </style>
 </head>
-
 <body>
 
-<h1>和太鼓リズムゲーム HARD</h1>
-<div id="info">F＝ドン / J＝カッ</div>
+<h1>和太鼓リズムゲーム</h1>
+<div>F＝ドン / J＝カッ</div>
 <div id="scoreBoard">Score: 0 | Combo: 0</div>
-<div id="judgement"></div>
+<div id="judge"></div>
 
 <div id="game">
     <div id="donLane" class="lane">
@@ -95,93 +91,109 @@ let score = 0;
 let combo = 0;
 let notes = [];
 
+const speed = 12;
+const judgeText = document.getElementById("judge");
 const scoreBoard = document.getElementById("scoreBoard");
-const judgementText = document.getElementById("judgement");
 
-const speed = 8; // 高速化
-
-function createNote(type){
+function spawn(type){
     const note = document.createElement("div");
-    note.classList.add("note", type);
-    note.style.top = "-70px";
+    note.className = "note " + type;
+    note.style.top = "-80px";
     note.dataset.type = type;
 
-    const lane = type === "don" ? 
-        document.getElementById("donLane") :
-        document.getElementById("kaLane");
+    const lane = type==="don"
+        ? document.getElementById("donLane")
+        : document.getElementById("kaLane");
 
     lane.appendChild(note);
     notes.push(note);
 }
 
 function update(){
-    notes.forEach((note,index)=>{
+    for(let i=notes.length-1;i>=0;i--){
+        let note = notes[i];
         let top = parseFloat(note.style.top);
         top += speed;
         note.style.top = top + "px";
 
         if(top > window.innerHeight){
-            registerBad();
-            note.remove();
-            notes.splice(index,1);
+            miss(note,i);
         }
-    });
+    }
     requestAnimationFrame(update);
 }
 
-function judge(diff){
-    if(diff < 25){
+function miss(note,index){
+    combo = 0;
+    showJudge("BAD","red");
+    note.remove();
+    notes.splice(index,1);
+    updateScore();
+}
+
+function hit(type){
+    const lane = type==="don"
+        ? document.querySelector("#donLane .hitCircle")
+        : document.querySelector("#kaLane .hitCircle");
+
+    const hitY = lane.getBoundingClientRect().top;
+
+    let closest = null;
+    let closestIndex = -1;
+    let minDiff = Infinity;
+
+    for(let i=0;i<notes.length;i++){
+        if(notes[i].dataset.type===type){
+            let noteY = notes[i].getBoundingClientRect().top;
+            let diff = Math.abs(noteY-hitY);
+            if(diff < minDiff){
+                minDiff = diff;
+                closest = notes[i];
+                closestIndex = i;
+            }
+        }
+    }
+
+    if(!closest) return;
+
+    if(minDiff < 20){
         score += 300;
         combo++;
         showJudge("GREAT","gold");
-    }else if(diff < 55){
+    }
+    else if(minDiff < 45){
         score += 100;
         combo++;
         showJudge("OK","lime");
-    }else{
-        registerBad();
     }
-}
+    else{
+        combo = 0;
+        showJudge("BAD","red");
+    }
 
-function registerBad(){
-    combo = 0;
-    showJudge("BAD","red");
+    closest.remove();
+    notes.splice(closestIndex,1);
+    updateScore();
 }
 
 function showJudge(text,color){
-    judgementText.textContent = text;
-    judgementText.style.color = color;
-    scoreBoard.textContent = 
-        "Score: " + score + " | Combo: " + combo;
+    judgeText.textContent = text;
+    judgeText.style.color = color;
 }
 
-function checkHit(type){
-    notes.forEach((note,index)=>{
-        if(note.dataset.type === type){
-            let rect = note.getBoundingClientRect();
-            let hitZone = document.querySelector(
-                type==="don" ? "#donLane .hitCircle" :
-                "#kaLane .hitCircle"
-            ).getBoundingClientRect();
-
-            let diff = Math.abs(rect.top - hitZone.top);
-            judge(diff);
-
-            note.remove();
-            notes.splice(index,1);
-        }
-    });
+function updateScore(){
+    scoreBoard.textContent =
+        "Score: "+score+" | Combo: "+combo;
 }
 
-document.addEventListener("keydown", e=>{
-    if(e.key==="f"||e.key==="F") checkHit("don");
-    if(e.key==="j"||e.key==="J") checkHit("ka");
+document.addEventListener("keydown",e=>{
+    if(e.key==="f"||e.key==="F") hit("don");
+    if(e.key==="j"||e.key==="J") hit("ka");
 });
 
-// ノーツ出現頻度アップ
 setInterval(()=>{
-    createNote(Math.random()>0.5 ? "don":"ka");
-},400);
+    spawn(Math.random()>0.5?"don":"ka");
+},250);
 
 update();
 </script>
